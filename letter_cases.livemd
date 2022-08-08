@@ -1,0 +1,139 @@
+# Letter Cases
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.6.1"}
+])
+
+defmodule Checker do
+  use GenServer
+
+  @impl true
+  def init(%{checked_button: checked_button, frame: frame, fun: fun}) do
+    Kino.Control.subscribe(checked_button, :clicked)
+    {:ok, %{fun: fun, frame: frame}}
+  end
+
+  @impl true
+  def handle_info({:clicked, _from}, %{fun: fun, frame: frame} = state) do
+    fun.()
+  rescue
+    _v ->
+      Kino.Frame.render(frame, Kino.Markdown.new(":(. Try again!"))
+      {:noreply, state}
+  else
+    _v ->
+      Kino.Frame.render(frame, Kino.Markdown.new(":). You make it."))
+      {:noreply, state}
+  end
+
+  def start(state) do
+    GenServer.start(__MODULE__, state)
+  end
+end
+```
+
+## 1. Define a module with a downcase letter prefixed
+
+In erlang the module name use downcase letter atom. so how can we
+do the same in Elixir?
+
+Define a module `:my_module` in the fellow code cell.
+
+```elixir
+
+```
+
+Check the key with the button.
+
+```elixir
+check = Kino.Control.button("check :my_module") |> Kino.render()
+frame = Kino.Frame.new() |> Kino.render()
+
+Checker.start(%{
+  checked_button: check,
+  frame: frame,
+  fun: fn -> :my_module.module_info() end
+})
+```
+
+## 2. Define a variable which must prefixe with Upcase Letter
+
+In Erlang, the varaibel is define with Upcase prefixed.
+
+So this channgle is that: can you define a Upcase prefixed variabel?
+Like: `MyVariable = 3` in Elixir.
+
+```elixir
+
+```
+
+```elixir
+
+```
+
+Check the key with the button.
+
+```elixir
+check = Kino.Control.button("check MyVariable") |> Kino.render()
+frame = Kino.Frame.new() |> Kino.render()
+my_binding = binding() |> Keyword.keys()
+
+code = """
+defmodule DefVar do 
+  defmacro def_var(name,value\\nil) do
+    var = {name,[], nil}
+    quote do
+      unquote(var) = unquote(value)
+    end
+  end
+end
+
+#----- new cell
+require DefVar
+DefVar.def_var(:MyVariable,1)
+"""
+
+Checker.start(%{
+  checked_button: check,
+  frame: frame,
+  fun: fn -> unless :MyVariable in my_binding, do: raise("no define :MyVaraible") end,
+  code: code
+})
+```
+
+## 3. Define a function prefiex with upcase letter
+
+Use `def` we can define function in a module, but the function name must downecase letter or underline prefixed, can you break it?
+
+Like define a function `Myfun/0` in module `T`.
+
+```elixir
+
+```
+
+Check the key with the button:
+
+```elixir
+check = Kino.Control.button("check T.MyFun/0") |> Kino.render()
+frame = Kino.Frame.new() |> Kino.render()
+
+code = """
+defmodule T do 
+  def unquote(:MyFun)() do
+    :ok
+  end
+end
+"""
+
+Checker.start(%{
+  checked_button: check,
+  frame: frame,
+  fun: fn ->
+    unless T.module_info(:functions)[:MyFun] == 0 do
+      raise "No define MyFun"
+    end
+  end,
+  code: code
+})
+```
